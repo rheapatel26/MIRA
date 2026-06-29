@@ -1,0 +1,50 @@
+# Firestore Security Rules
+# This file is for review purposes. To deploy these rules, run:
+#   npx firebase-tools@latest deploy --only firestore:rules
+#
+# These rules restrict access to the `patients` collection and validate
+# that documents contain the required fields with correct types.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Deny all access by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /patients/{patientId} {
+      // Allow public reads (no auth required for this demo app)
+      allow read: if true;
+
+      // Allow create only if the document has valid shape
+      allow create: if isValidPatient(request.resource.data);
+
+      // Allow update only if the updated document has valid shape
+      allow update: if isValidPatient(request.resource.data);
+
+      // Allow delete always (no auth for this demo)
+      allow delete: if true;
+    }
+  }
+
+  // Validates that a patient document has all required fields with correct types
+  function isValidPatient(data) {
+    return data.keys().hasAll(['fullName', 'dateOfBirth', 'email', 'glucose', 'hemoglobin', 'cholesterol', 'remarks'])
+      && data.fullName is string
+      && data.fullName.size() > 0
+      && data.dateOfBirth is string
+      && data.email is string
+      && data.glucose is number
+      && data.glucose >= 0
+      && data.glucose <= 600
+      && data.hemoglobin is number
+      && data.hemoglobin >= 0
+      && data.hemoglobin <= 25
+      && data.cholesterol is number
+      && data.cholesterol >= 0
+      && data.cholesterol <= 600
+      && data.remarks is string;
+  }
+}
